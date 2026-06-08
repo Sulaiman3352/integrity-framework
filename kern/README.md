@@ -143,15 +143,6 @@ bpftool btf dump file /sys/kernel/btf/vmlinux format c > kern/vmlinux.h
 
 ---
 
-## Cross-References
-
-- **Why the kernel side must be C/eBPF at all:** `design_decisions_log.md`, §3.1.
-- **The kernel↔userspace architecture (the arms-length boundary):** `design_decisions_log.md`, §4.
-- **The overall licensing strategy and the open/proprietary split:** `licensing_strategy.md`.
-- **The repository structure and per-component licenses:** `project_structure_and_licensing.md`.
-
----
-
 *The GPL declaration requirement for eBPF GPL-only helpers is a technical certainty. The
 precise copyright license applied to these files (GPL-2.0-or-later by default, vs. a GPL-OR-BSD
 dual-license idiom) is subject to the legal review described in `licensing_strategy.md`. This
