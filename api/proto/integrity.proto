@@ -1,0 +1,132 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// integrity.proto — public gRPC API contract for the Integrity Framework.
+//
+// NOTE: This file is licensed Apache-2.0, which DIFFERS from the
+// repository's top-level AGPL-3.0 license. See api/proto/LICENSE and
+// api/proto/README.md for the rationale (this is the public API contract;
+// it is intentionally permissive so any client may be built against it).
+// This API describes ONLY the open-core daemon; it does not expose any
+// proprietary/enterprise features.
+//
+// Copyright (C) 2026 Sulayman Seid Ymam
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+syntax = "proto3";
+
+package integrity.v1;
+
+option go_package = "github.com/Sulaiman3352/integrity-framework/daemon/pkg/pb;pb";
+
+// ============================================================================
+//  Core event types
+// ============================================================================
+
+// Verdict is the decision the daemon reached for an execution event.
+enum Verdict {
+  VERDICT_UNKNOWN    = 0;
+  VERDICT_ALLOW      = 1;  // permitted (matched a trust tier)
+  VERDICT_BLOCK      = 2;  // denied (untrusted; enforced via BPF LSM)
+  VERDICT_QUARANTINE = 3;  // isolated rather than outright blocked
+  VERDICT_SUSPICIOUS = 4;  // allowed but flagged (e.g. anomalous behavior)
+}
+
+// ExecEvent is emitted when a process attempts to execute.
+message ExecEvent {
+  uint64  timestamp_ns = 1;  // nanoseconds since boot (kernel time)
+  uint32  pid          = 2;
+  uint32  uid          = 3;
+  string  comm         = 4;  // short process name
+  string  filename     = 5;  // path of the binary being executed
+  bytes   sha256       = 6;  // content hash of the binary
+  Verdict verdict      = 7;
+  string  trust_reason = 8;  // which tier resolved it, or why it was blocked
+}
+
+// ============================================================================
+//  Requests / responses
+// ============================================================================
+
+message StatusRequest {}
+
+message StatusResponse {
+  bool   running       = 1;
+  uint64 uptime_s      = 2;
+  bool   tpm_present   = 3;
+  string tpm_state     = 4;  // e.g. "ok", "unsealed", "fallback-hmac"
+  uint64 events_total  = 5;
+  uint64 events_blocked = 6;
+  string mode          = 7;  // learning | permissive | enforcing | lockdown
+}
+
+message StreamRequest {
+  // optional minimum severity / verdict filter could go here later
+}
+
+message ListEventsRequest {
+  uint32 limit          = 1;
+  uint64 since_ns       = 2;
+  Verdict verdict_filter = 3;  // optional; VERDICT_UNKNOWN = no filter
+}
+
+message ListEventsResponse {
+  repeated ExecEvent events = 1;
+}
+
+message WhitelistEntry {
+  bytes  sha256 = 1;
+  string path   = 2;  // optional, informational
+  string note   = 3;  // optional, why it was added
+}
+
+message WhitelistResponse {
+  bool   ok      = 1;
+  string message = 2;
+}
+
+message RemoveWhitelistRequest {
+  bytes sha256 = 1;
+}
+
+message ListWhitelistRequest {}
+
+message ListWhitelistResponse {
+  repeated WhitelistEntry entries = 1;
+}
+
+message StatsRequest {}
+
+message StatsResponse {
+  double events_per_sec = 1;
+  uint64 events_total   = 2;
+  uint64 events_blocked = 3;
+  uint64 whitelist_size = 4;
+}
+
+// ============================================================================
+//  Service
+// ============================================================================
+
+service IntegrityService {
+  // Health, TPM state, mode, counters.
+  rpc GetStatus(StatusRequest) returns (StatusResponse);
+
+  // Real-time stream of execution events (server-streaming).
+  rpc StreamEvents(StreamRequest) returns (stream ExecEvent);
+
+  // Query historical events with optional filters.
+  rpc ListEvents(ListEventsRequest) returns (ListEventsResponse);
+
+  // Trusted-hash (whitelist) management.
+  rpc AddWhitelist(WhitelistEntry) returns (WhitelistResponse);
+  rpc RemoveWhitelist(RemoveWhitelistRequest) returns (WhitelistResponse);
+  rpc ListWhitelist(ListWhitelistRequest) returns (ListWhitelistResponse);
+
+  // Aggregate statistics.
+  rpc GetStats(StatsRequest) returns (StatsResponse);
+}
