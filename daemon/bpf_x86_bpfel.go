@@ -8,9 +8,18 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
+	"structs"
 
 	"github.com/cilium/ebpf"
 )
+
+type bpfEvent struct {
+	_        structs.HostLayout
+	Pid      uint32
+	Uid      uint32
+	Comm     [16]uint8
+	Filename [256]uint8
+}
 
 // loadBpf returns the embedded CollectionSpec for bpf.
 func loadBpf() (*ebpf.CollectionSpec, error) {
