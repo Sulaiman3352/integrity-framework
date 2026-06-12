@@ -24,18 +24,30 @@ struct {
 struct event *unused_event __attribute__((unused)); // the perpose of this is to force the compiler to acknowledge struct event as a used type → it gets preserved in the BTF → bpf2go finds it → generates the Go struct automatically.
 
 SEC("tracepoint/syscalls/sys_enter_execve")
-int handle_execve(struct trace_event_raw_sys_enter *ctx){
+int handle_execve(struct trace_event_raw_sys_enter *ctx)
+{
     struct event *e;
-    e = bpf_ringbuf_reserve(&events, sizeof(*e), 0);
 
+    e = bpf_ringbuf_reserve(&events, sizeof(*e), 0);
     if (!e)
         return 0;
+
     e->pid = bpf_get_current_pid_tgid() >> 32;
     e->uid = bpf_get_current_uid_gid() & 0xffffffff;
     bpf_get_current_comm(&e->comm, sizeof(e->comm));
 
+    // Zero the filename buffer FIRST, so stale ring-buffer data can't show through.
+    __builtin_memset(&e->filename, 0, sizeof(e->filename));
+
+    // Read the filename; check the result.
     const char *filename = (const char *)ctx->args[0];
-    bpf_probe_read_user_str(&e->filename, sizeof(e->filename), filename);
+    long ret = bpf_probe_read_user_str(&e->filename, sizeof(e->filename), filename);
+    if (ret < 0) {
+        // Read failed — mark it clearly instead of leaving garbage.
+        e->filename[0] = '?';
+        e->filename[1] = '\0';
+    }
+
     bpf_ringbuf_submit(e, 0);
     return 0;
 }

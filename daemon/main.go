@@ -11,6 +11,14 @@ import (
 	"github.com/cilium/ebpf/rlimit"
 )
 
+func clean_output(b []byte) string {
+	var n int = bytes.IndexByte(b, 0)
+	if n == -1 {
+		n = len(b)
+	}
+	return string(b[:n])
+}
+
 func main() {
 	// Remove The Memlock Limit
 	if err := rlimit.RemoveMemlock(); err != nil {
@@ -44,17 +52,16 @@ func main() {
 		record, err := rd.Read()
 		if err != nil {
 			if errors.Is(err, ringbuf.ErrClosed) { // Clean-Shutdown
+				log.Println("Thank you for using Walia Guard🤗, See you soon!")
 				return
 			}
 			log.Printf("error reading: %v", err)
 			continue
 		}
-
 		if err := binary.Read(bytes.NewReader(record.RawSample), binary.LittleEndian, &event); err != nil {
 			log.Printf("error decoding: %v", err)
 			continue
 		}
-		log.Printf("PID=%d UID=%d COMM=%s FILENAME=%s", event.Pid, event.Uid, event.Comm, event.Filename)
-
+		log.Printf("PID=%d UID=%d COMM=%s FILENAME=%s", event.Pid, event.Uid, clean_output(event.Comm[:]), event.Filename)
 	}
 }
