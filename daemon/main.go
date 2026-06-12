@@ -1,8 +1,10 @@
 package main
 
 import (
-	"log"
+	"bytes"
 	"encoding/binary"
+	"errors"
+	"log"
 
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
@@ -37,12 +39,22 @@ func main() {
 	defer rd.Close()
 
 	//
+	var event bpfEvent
 	for {
 		record, err := rd.Read()
 		if err != nil {
-			log.Fatalf("The reader got closed")
+			if errors.Is(err, ringbuf.ErrClosed) { // Clean-Shutdown
+				return
+			}
+			log.Printf("error reading: %v", err)
+			continue
 		}
-		var event bpfEvent
+
+		if err := binary.Read(bytes.NewReader(record.RawSample), binary.LittleEndian, &event); err != nil {
+			log.Printf("error decoding: %v", err)
+			continue
+		}
+		log.Printf("PID=%d UID=%d COMM=%s FILENAME=%s", event.Pid, event.Uid, event.Comm, event.Filename)
 
 	}
 }
