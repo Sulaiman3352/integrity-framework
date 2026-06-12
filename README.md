@@ -138,7 +138,7 @@ go build -o integrity-daemon . && sudo ./integrity-daemon
 | `undefined: bpfEvent` when building                | The `gen.go` directive needs `-type event`; re-run `go generate`.                   |
 | Build OK, but `operation not permitted` at runtime | Run with `sudo` (eBPF load/attach needs privileges).                                |
 
-Contributions are welcome. Before submitting a contribution, please read:
+## Contributions are welcome. Before submitting a contribution, please read:
 
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) — how to set up, build, test, and submit changes.
 - [`CLA.md`](./CLA.md) — the **Contributor License Agreement**, which all contributors are
