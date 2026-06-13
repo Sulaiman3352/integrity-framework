@@ -1,0 +1,56 @@
+# .github/workflows/cla.yml
+#
+# CLA Assistant Lite — runs as a GitHub Action, stores signatures as a JSON
+# file in this repository (no third-party service). Free for public repos.
+#
+# How it works:
+#   - On a pull request, it checks whether the PR author has signed the CLA.
+#   - If not, it comments asking them to agree by posting a specific phrase.
+#   - When they post the phrase as a comment, their signature is recorded in
+#     a JSON file on a dedicated branch of THIS repo.
+#   - Signed contributors are remembered and not asked again.
+#
+# Setup notes (see comments below before first use).
+
+name: "CLA Assistant"
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, closed, synchronize]
+
+# Required permissions for the action to comment on PRs, manage labels,
+# and commit the signatures file.
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+  statuses: write
+
+jobs:
+  CLAAssistant:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "CLA Assistant"
+        # Trigger only on the agreement comment, or on PR open/sync/close.
+        if: (github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA') || github.event_name == 'pull_request_target'
+        uses: contributor-assistant/github-action@v2.6.1
+        env:
+          # Provided automatically by GitHub Actions — do NOT create this yourself.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # The phrase a contributor comments to sign.
+          custom-pr-sign-comment: 'I have read the CLA Document and I hereby sign the CLA'
+
+          # Where the signature records are stored (a JSON file in this repo).
+          path-to-signatures: 'signatures/cla.json'
+
+          # Path to your CLA document (the file contributors are agreeing to).
+          path-to-document: 'https://github.com/sulaiman3352/integrity-framework/blob/main/CLA.md'
+
+          # Branch where the signatures file is stored/committed.
+          branch: 'cla-signatures'
+
+          # Optional: accounts that never need to sign (e.g. yourself, bots).
+          allowlist: 'sulaiman3352,dependabot[bot]'
