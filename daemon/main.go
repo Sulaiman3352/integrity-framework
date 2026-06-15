@@ -52,7 +52,7 @@ func main() {
 		record, err := rd.Read()
 		if err != nil {
 			if errors.Is(err, ringbuf.ErrClosed) { // Clean-Shutdown
-				log.Println("Thank you for using Walia Guard🤗, See you soon!")
+				log.Println("Thank you for using Walia Guard🤗, See you soon!👋")
 				return
 			}
 			log.Printf("error reading: %v", err)

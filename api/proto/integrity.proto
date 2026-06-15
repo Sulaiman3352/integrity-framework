@@ -21,7 +21,7 @@ syntax = "proto3";
 
 package integrity.v1;
 
-option go_package = "github.com/Sulaiman3352/integrity-framework/daemon/pkg/pb;pb";
+option go_package = "github.com/sulaiman3352/integrity-framework/daemon/pkg/pb;pb";
 
 // ============================================================================
 //  Core event types
