@@ -30,3 +30,14 @@ all: proto ebpf build
 
 clean: 
 	rm -f daemon/integrity-daemon
+
+
+help:
+	@echo "Targets:"
+	@echo "  make / make all  	- generate (eBPF + proto) and build"
+	@echo "  make ebpf        	- regenerate only eBPF bindings"
+	@echo "  make proto       	- regenerate only proto/gRPC code"
+	@echo "  make build       	- build the daemon (uses committed generated code)"
+	@echo "  make clean       	- remove built binaries"
+	@echo "  make vmlinux		- genrate file vmlinux.h in case it does not exist"
+	@echo "  make vmlinux-Force	- regenrate vmlinux.h file even if it exists"
