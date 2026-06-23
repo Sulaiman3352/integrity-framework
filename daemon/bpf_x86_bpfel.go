@@ -14,11 +14,12 @@ import (
 )
 
 type bpfEvent struct {
-	_        structs.HostLayout
-	Pid      uint32
-	Uid      uint32
-	Comm     [16]uint8
-	Filename [256]uint8
+	_         structs.HostLayout
+	Timestamp uint64
+	Pid       uint32
+	Uid       uint32
+	Comm      [16]uint8
+	Filename  [256]uint8
 }
 
 // loadBpf returns the embedded CollectionSpec for bpf.

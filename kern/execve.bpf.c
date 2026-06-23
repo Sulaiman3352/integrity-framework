@@ -12,6 +12,7 @@
 #define MAX_FILENAME_LEN 256
 
 struct event {
+    __u64 timestamp;    
     __u32 pid;
     __u32 uid;
     __u8  comm[TASK_COMM_LEN];
@@ -24,8 +25,7 @@ struct {
 struct event *unused_event __attribute__((unused)); // the perpose of this is to force the compiler to acknowledge struct event as a used type → it gets preserved in the BTF → bpf2go finds it → generates the Go struct automatically.
 
 SEC("tracepoint/syscalls/sys_enter_execve")
-int handle_execve(struct trace_event_raw_sys_enter *ctx)
-{
+int handle_execve(struct trace_event_raw_sys_enter *ctx){
     struct event *e;
 
     e = bpf_ringbuf_reserve(&events, sizeof(*e), 0);
@@ -35,6 +35,8 @@ int handle_execve(struct trace_event_raw_sys_enter *ctx)
     e->pid = bpf_get_current_pid_tgid() >> 32;
     e->uid = bpf_get_current_uid_gid() & 0xffffffff;
     bpf_get_current_comm(&e->comm, sizeof(e->comm));
+
+    e->timestamp = bpf_ktime_get_ns(); // capture the true kernal time
 
     // Zero the filename buffer FIRST, so stale ring-buffer data can't show through.
     __builtin_memset(&e->filename, 0, sizeof(e->filename));

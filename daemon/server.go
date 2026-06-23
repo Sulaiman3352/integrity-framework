@@ -9,6 +9,9 @@ import (
 
 type server struct {
 	pb.UnimplementedIntegrityServiceServer
+
+	//
+	events chan *pb.ExecEvent
 }
 
 func (s *server) GetStatus(ctx context.Context, req *pb.StatusRequest) (*pb.StatusResponse, error) {

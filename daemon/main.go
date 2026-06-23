@@ -4,14 +4,17 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"os"
+	"time"
 
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/cilium/ebpf/rlimit"
 	"github.com/sulaiman3352/integrity-framework/daemon/pkg/pb"
+	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
 )
 
@@ -26,6 +29,29 @@ func clean_output(b []byte) string {
 		n = len(b)
 	}
 	return string(b[:n])
+}
+
+// bootOffset is the nanosecond offset between CLOCK_REALTIME and CLOCK_MONOTONIC,
+// measured once at startup and frozen for the lifetime of the daemon.
+//
+// Adding bootOffset to a CLOCK_MONOTONIC timestamp (such as bpf_ktime_get_ns())
+// yields the corresponding wall-clock time. Freezing at startup ensures NTP
+// corrections after boot don't reorder events — critical for forensic audit trails.
+var bootOffset = computeBootOffset()
+
+// computeBootOffset samples both realtime and monotonic clocks back-to-back
+// and returns realtime - monotonic as a nanosecond offset.
+func computeBootOffset() int64 {
+	var realtime, monotonic unix.Timespec
+	unix.ClockGettime(unix.CLOCK_REALTIME, &realtime)
+	unix.ClockGettime(unix.CLOCK_MONOTONIC, &monotonic)
+	return realtime.Nano() - monotonic.Nano()
+}
+
+// eventToWallTime converts a bpf_ktime_get_ns() timestamp (CLOCK_MONOTONIC,
+// nanoseconds since boot) to a time.Time in the wall-clock epoch.
+func eventToWallTime(bpfTimestamp uint64) time.Time {
+	return time.Unix(0, int64(bpfTimestamp)+bootOffset)
 }
 
 func main() {
@@ -81,7 +107,6 @@ func main() {
 		}
 	}()
 
-	//
 	var event bpfEvent
 	for {
 		record, err := rd.Read()
@@ -97,6 +122,13 @@ func main() {
 			log.Printf("error decoding: %v", err)
 			continue
 		}
-		log.Printf("PID=%d UID=%d COMM=%s FILENAME=%s", event.Pid, event.Uid, clean_output(event.Comm[:]), event.Filename)
+
+		eventTime := eventToWallTime(event.Timestamp)
+		fmt.Printf("[%s] PID=%d UID=%d COMM=%s FILENAME=%s\n",
+			// eventTime.UTC().Format(time.RFC3339Nano),
+			eventTime.Format(time.StampMicro),
+			event.Pid, event.Uid,
+			clean_output(event.Comm[:]),
+			clean_output(event.Filename[:]))
 	}
 }
