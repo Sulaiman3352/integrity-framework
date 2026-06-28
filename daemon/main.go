@@ -43,8 +43,14 @@ var bootOffset = computeBootOffset()
 // and returns realtime - monotonic as a nanosecond offset.
 func computeBootOffset() int64 {
 	var realtime, monotonic unix.Timespec
-	unix.ClockGettime(unix.CLOCK_REALTIME, &realtime)
-	unix.ClockGettime(unix.CLOCK_MONOTONIC, &monotonic)
+	if err := unix.ClockGettime(unix.CLOCK_REALTIME, &realtime); err != nil {
+		log.Fatalf("failed to get realtime clock: %v", err)
+	}
+	if err := unix.ClockGettime(unix.CLOCK_MONOTONIC, &monotonic); err != nil {
+		log.Fatalf("failed to get monotonic clock: %v", err)
+	}
+	// note: two separate syscalls Between them a tiny slice of time passes and the fix is
+	// (sandwich: read monotonic, read realtime, read monotonic again, use the average of the two monotonic reads) but it is a little bit over-engineering
 	return realtime.Nano() - monotonic.Nano()
 }
 
@@ -125,7 +131,6 @@ func main() {
 
 		eventTime := eventToWallTime(event.Timestamp)
 		fmt.Printf("[%s] PID=%d UID=%d COMM=%s FILENAME=%s\n",
-			// eventTime.UTC().Format(time.RFC3339Nano),
 			eventTime.Format(time.StampMicro),
 			event.Pid, event.Uid,
 			clean_output(event.Comm[:]),
