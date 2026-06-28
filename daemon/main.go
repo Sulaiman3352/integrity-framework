@@ -8,6 +8,8 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/cilium/ebpf/link"
@@ -103,6 +105,7 @@ func main() {
 	if err := os.Chmod(socketPath, 0600); err != nil {
 		log.Fatalf("failed to set socket permissions: %v", err)
 	}
+	defer os.Remove(socketPath)
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterIntegrityServiceServer(grpcServer, &server{})
@@ -113,12 +116,22 @@ func main() {
 		}
 	}()
 
+	// Signal handling — clean shutdown on Ctrl+C / SIGTERM
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		sig := <-sigCh
+		log.Printf("received signal %v, shutting down...", sig)
+		rd.Close()
+	}()
+
 	var event bpfEvent
 	for {
 		record, err := rd.Read()
 		if err != nil {
 			if errors.Is(err, ringbuf.ErrClosed) { // Clean-Shutdown
 				log.Println("Thank you for using Walia Guard🤗, See you soon!👋")
+				grpcServer.GracefulStop()
 				return
 			}
 			log.Printf("error reading: %v", err)
