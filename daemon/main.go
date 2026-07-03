@@ -108,7 +108,8 @@ func main() {
 	defer os.Remove(socketPath)
 
 	grpcServer := grpc.NewServer()
-	pb.RegisterIntegrityServiceServer(grpcServer, &server{})
+	srv := &server{eventCh: make(chan *pb.ExecEvent, 100)}
+	pb.RegisterIntegrityServiceServer(grpcServer, srv)
 
 	go func() {
 		if err := grpcServer.Serve(listener); err != nil {
@@ -148,5 +149,18 @@ func main() {
 			event.Pid, event.Uid,
 			clean_output(event.Comm[:]),
 			clean_output(event.Filename[:]))
+		pbEvent := &pb.ExecEvent{
+			TimestampNs: event.Timestamp,
+			Pid:         event.Pid,
+			Uid:         event.Uid,
+			Comm:        clean_output(event.Comm[:]),
+			Filename:    clean_output(event.Filename[:]),
+			TrustReason: "observed"}
+		select {
+		case srv.eventCh <- pbEvent:
+			// delivered
+		default:
+			// channel full — drop for this slow client, keep the reader moving (This is Just for the current phase)
+		}
 	}
 }

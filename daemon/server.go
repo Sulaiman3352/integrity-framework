@@ -5,13 +5,14 @@ import (
 	"context"
 
 	"github.com/sulaiman3352/integrity-framework/daemon/pkg/pb"
+	"google.golang.org/grpc"
 )
 
 type server struct {
 	pb.UnimplementedIntegrityServiceServer
 
-	//
-	events chan *pb.ExecEvent
+	// this is channel needed for grpc socket implementation
+	eventCh chan *pb.ExecEvent
 }
 
 func (s *server) GetStatus(ctx context.Context, req *pb.StatusRequest) (*pb.StatusResponse, error) {
@@ -25,4 +26,17 @@ func (s *server) GetStatus(ctx context.Context, req *pb.StatusRequest) (*pb.Stat
 		EventsBlocked: 0,
 		Mode:          "observing",
 	}, nil
+}
+
+func (s *server) StreamEvents(req *pb.StreamRequest, stream grpc.ServerStreamingServer[pb.ExecEvent]) error {
+	for {
+		select {
+		case <-stream.Context().Done():
+			return stream.Context().Err()
+		case event := <-s.eventCh:
+			if err := stream.Send(event); err != nil {
+				return err
+			}
+		}
+	}
 }
