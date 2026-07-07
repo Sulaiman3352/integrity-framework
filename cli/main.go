@@ -1,46 +1,49 @@
 package main
 
 import (
-	"os"
+	"context"
 	"fmt"
 	"log"
-	"context"
+	"os"
 
+	"github.com/sulaiman3352/integrity-framework/daemon/pkg/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"github.com/sulaiman3352/integrity-framework/daemon/pkg/pb"
 )
 
-func statusCmd(){
+// function to create a new client
+func nclient() (pb.IntegrityServiceClient, *grpc.ClientConn) {
 	conn, err := grpc.NewClient("unix:///run/walia-guard/integrity.sock", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil{
-		log.Fatalf("Failed to call the socket: %v",err)
+	if err != nil {
+		log.Fatalf("Failed to call the socket: %v", err)
 	}
+	return pb.NewIntegrityServiceClient(conn), conn
+}
+
+func statusCmd() {
+	client, conn := nclient()
 	defer conn.Close()
 
-	client := pb.NewIntegrityServiceClient(conn)
 	stat, err := client.GetStatus(context.Background(), &pb.StatusRequest{})
-	if err != nil{
-                log.Fatalf("Failed to get status: %v",err)
-        }
-	fmt.Printf("Running: %v\nMode: %v\nUptime: %v\nTPM: %v\nTPM Status: %v\nEvents: %v total, %v blocked",stat.Running, stat.Mode, stat.UptimeS, stat.TpmPresent, stat.TpmState, stat.EventsTotal, stat.EventsBlocked)
-
-
-}
-
-func watchCmd(){
+	if err != nil {
+		log.Fatalf("Failed to get status: %v", err)
+	}
+	fmt.Printf("Running: %v\nMode: %v\nUptime: %v\nTPM: %v\nTPM Status: %v\nEvents: %v total, %v blocked", stat.Running, stat.Mode, stat.UptimeS, stat.TpmPresent, stat.TpmState, stat.EventsTotal, stat.EventsBlocked)
 
 }
 
+func watchCmd() {
 
-func main(){
-	if len(os.Args) > 2{
-		log.Fatalf("too many arguments")	
-	} else if len(os.Args) < 2{
+}
+
+func main() {
+	if len(os.Args) > 2 {
+		log.Fatalf("too many arguments")
+	} else if len(os.Args) < 2 {
 		log.Fatalf("you need to write an argument")
 	}
 
-	if os.Args[1] != "status" && os.Args[1] != "watch" {	
+	if os.Args[1] != "status" && os.Args[1] != "watch" {
 		log.Fatalf("unrecognized argument")
 	}
 
