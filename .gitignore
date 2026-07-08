@@ -1,3 +1,4 @@
 kern/vmlinux.h
 .vscode/
 daemon/integrity-daemon
+cli/walia-cli
