@@ -5,7 +5,7 @@ $(VMLINUX):
 	@echo "Generating $(VMLINUX) from this machine's kernel BTF..."
 	bpftool -d btf dump file /sys/kernel/btf/vmlinux format c > $(VMLINUX)
 
-.PHONY: proto ebpf vmlinux vmlinux-force build all clean
+.PHONY: proto ebpf vmlinux vmlinux-force build all clean cli
 
 proto:                  # regenerate gRPC code from the .proto
 	protoc \
@@ -26,18 +26,22 @@ ebpf:	$(VMLINUX)              # regenerate eBPF bindings
 build:                # build the daemon
 	cd daemon && go build -o integrity-daemon .
 
-all: proto ebpf build
+cli:
+	cd cli && go build -o walia-cli .
+
+all: proto ebpf build cli
 
 clean: 
-	rm -f daemon/integrity-daemon
+	rm -f daemon/integrity-daemon cli/walia-cli
 
 
 help:
 	@echo "Targets:"
-	@echo "  make / make all  	- generate (eBPF + proto) and build"
+	@echo "  make / make all  	- generate (eBPF + proto) and build daemon + cli"
 	@echo "  make ebpf        	- regenerate only eBPF bindings"
 	@echo "  make proto       	- regenerate only proto/gRPC code"
 	@echo "  make build       	- build the daemon (uses committed generated code)"
 	@echo "  make clean       	- remove built binaries"
 	@echo "  make vmlinux		- genrate file vmlinux.h in case it does not exist"
 	@echo "  make vmlinux-Force	- regenrate vmlinux.h file even if it exists"
+	@echo "  make cli		- build the cli tool"
