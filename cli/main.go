@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -44,7 +45,7 @@ func eventToWallTime(bpfTimestamp uint64) time.Time {
 }
 
 // function to create a new client
-func nclient() (pb.IntegrityServiceClient, *grpc.ClientConn) {
+func newClient() (pb.IntegrityServiceClient, *grpc.ClientConn) {
 	conn, err := grpc.NewClient("unix:///run/walia-guard/integrity.sock", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Failed to call the socket: %v", err)
@@ -53,19 +54,22 @@ func nclient() (pb.IntegrityServiceClient, *grpc.ClientConn) {
 }
 
 func statusCmd() {
-	client, conn := nclient()
+	client, conn := newClient()
 	defer conn.Close()
 
 	stat, err := client.GetStatus(context.Background(), &pb.StatusRequest{})
 	if err != nil {
 		log.Fatalf("Failed to get status: %v", err)
 	}
-	fmt.Printf("Running: %v\nMode: %v\nUptime: %v\nTPM: %v\nTPM Status: %v\nEvents: %v total, %v blocked", stat.Running, stat.Mode, stat.UptimeS, stat.TpmPresent, stat.TpmState, stat.EventsTotal, stat.EventsBlocked)
+	fmt.Printf("Running: %v\nMode: %v\nUptime: %vs\nTPM: %v\nTPM Status: %v\nEvents: %v total, %v blocked", stat.Running, stat.Mode, stat.UptimeS, stat.TpmPresent, stat.TpmState, stat.EventsTotal, stat.EventsBlocked)
 
 }
 
+// Big note here for the future!!!
+// Have the daemon convert to wall-clock before sending, and add a proper wall-clock timestamp field to the proto
+
 func watchCmd() {
-	client, conn := nclient()
+	client, conn := newClient()
 	defer conn.Close()
 
 	stream, err := client.StreamEvents(context.Background(), &pb.StreamRequest{})
@@ -75,12 +79,11 @@ func watchCmd() {
 
 	for {
 		event, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			fmt.Printf("That is all for now")
 			break
 		} else if err != nil {
 			log.Fatalf("something went wrong: %v", err)
-			break
 		} else if err == nil {
 			eventTime := eventToWallTime(event.TimestampNs)
 			fmt.Printf("[%s] PID=%d UID=%d COMM=%s FILENAME=%s\n",
