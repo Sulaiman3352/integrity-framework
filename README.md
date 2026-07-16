@@ -1,6 +1,6 @@
 ## License
 
-<ProjectName> is **free and open source software**, licensed under the
+Walia Guard is **free and open source software**, licensed under the
 **GNU Affero General Public License v3.0 (AGPL-3.0)** — see [`LICENSE`](./LICENSE).
 You are free to use, run, study, modify, and redistribute it under the terms of that license.
 
