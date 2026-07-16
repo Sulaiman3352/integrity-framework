@@ -144,4 +144,4 @@ go build -o integrity-daemon . && sudo ./integrity-daemon
 - [`CLA.md`](./CLA.md) — the **Contributor License Agreement**, which all contributors are
   asked to agree to before their contributions can be merged. Please read it in full so you
   understand the terms before contributing.
-  If you have questions about contributing, open an issue or reach out at <contact>. 
+  If you have questions about contributing, open an issue or reach out at (I will write my contact here later). 
