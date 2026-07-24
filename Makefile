@@ -29,7 +29,9 @@ build:                # build the daemon
 cli:
 	cd cli && go build -o walia-cli .
 
-all: proto ebpf build cli
+generate: proto ebpf
+
+all: build cli
 
 clean: 
 	rm -f daemon/integrity-daemon cli/walia-cli
@@ -37,11 +39,12 @@ clean:
 
 help:
 	@echo "Targets:"
-	@echo "  make / make all  	- generate (eBPF + proto) and build daemon + cli"
+	@echo "  make all		- build daemon + cli"
+	@echo "  make generate        	- generate (eBPF + proto)"
 	@echo "  make ebpf        	- regenerate only eBPF bindings"
 	@echo "  make proto       	- regenerate only proto/gRPC code"
 	@echo "  make build       	- build the daemon (uses committed generated code)"
 	@echo "  make clean       	- remove built binaries"
 	@echo "  make vmlinux		- genrate file vmlinux.h in case it does not exist"
-	@echo "  make vmlinux-Force	- regenrate vmlinux.h file even if it exists"
+	@echo "  make vmlinux-force	- regenrate vmlinux.h file even if it exists"
 	@echo "  make cli		- build the cli tool"

@@ -26,19 +26,19 @@ and the eBPF/BTF tooling.
 **Fedora / RHEL:**
 
 ```bash
-sudo dnf install golang clang llvm libbpf-devel bpftool kernel-devel
+sudo dnf install golang clang llvm libbpf-devel bpftool kernel-devel protobuf-compiler
 ```
 
 **Debian / Ubuntu:**
 
 ```bash
-sudo apt install golang clang llvm libbpf-dev linux-tools-common linux-tools-$(uname -r)
+sudo apt install golang clang llvm libbpf-dev linux-tools-common linux-tools-$(uname -r) protobuf-compiler
 ```
 
 **Arch:**
 
 ```bash
-sudo pacman -S go clang llvm libbpf bpf
+sudo pacman -S go clang llvm libbpf bpf protobuf
 ```
 
 Your kernel must have **BTF enabled** (it almost certainly is on any modern distro). Verify:
