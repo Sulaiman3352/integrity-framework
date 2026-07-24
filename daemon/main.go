@@ -1,10 +1,13 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Copyright (C) 2026 Sulayman Seid Ymam
+
 package main
 
 import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -75,12 +78,20 @@ func main() {
 	}
 	defer objs.Close()
 
-	// Attach The Probe To The Tracepoint(hook)
-	tp, err := link.Tracepoint("syscalls", "sys_enter_execve", objs.HandleExecve, nil)
+	// Attach to execve — the classic path-based execution syscall.
+	tpExecve, err := link.Tracepoint("syscalls", "sys_enter_execve", objs.HandleExecve, nil)
 	if err != nil {
-		log.Fatalf("failed to load Probe to tracepoint: %v", err)
+		log.Fatalf("failed to attach execve tracepoint: %v", err)
 	}
-	defer tp.Close()
+	defer tpExecve.Close()
+
+	// Attach to execveat — covers fexecve() and memfd-based execution, which
+	// never go through execve and would otherwise be invisible to the daemon.
+	tpExecveat, err := link.Tracepoint("syscalls", "sys_enter_execveat", objs.HandleExecveat, nil)
+	if err != nil {
+		log.Fatalf("failed to attach execveat tracepoint: %v", err)
+	}
+	defer tpExecveat.Close()
 
 	// Open a Reader on The Ring Buffer
 	rd, err := ringbuf.NewReader(objs.Events)
@@ -143,12 +154,7 @@ func main() {
 			continue
 		}
 
-		eventTime := eventToWallTime(event.Timestamp)
-		fmt.Printf("[%s] PID=%d UID=%d COMM=%s FILENAME=%s\n",
-			eventTime.Format(time.StampMicro),
-			event.Pid, event.Uid,
-			clean_output(event.Comm[:]),
-			clean_output(event.Filename[:]))
+		// eventTime := eventToWallTime(event.Timestamp)
 		pbEvent := &pb.ExecEvent{
 			TimestampNs: event.Timestamp,
 			Pid:         event.Pid,

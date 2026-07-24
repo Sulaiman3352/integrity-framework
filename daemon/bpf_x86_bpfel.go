@@ -64,7 +64,8 @@ type bpfSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type bpfProgramSpecs struct {
-	HandleExecve *ebpf.ProgramSpec `ebpf:"handle_execve"`
+	HandleExecve   *ebpf.ProgramSpec `ebpf:"handle_execve"`
+	HandleExecveat *ebpf.ProgramSpec `ebpf:"handle_execveat"`
 }
 
 // bpfMapSpecs contains maps before they are loaded into the kernel.
@@ -121,12 +122,14 @@ type bpfVariables struct {
 //
 // It can be passed to loadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type bpfPrograms struct {
-	HandleExecve *ebpf.Program `ebpf:"handle_execve"`
+	HandleExecve   *ebpf.Program `ebpf:"handle_execve"`
+	HandleExecveat *ebpf.Program `ebpf:"handle_execveat"`
 }
 
 func (p *bpfPrograms) Close() error {
 	return _BpfClose(
 		p.HandleExecve,
+		p.HandleExecveat,
 	)
 }
 
