@@ -106,7 +106,8 @@ type ExecEvent struct {
 	Filename      string                 `protobuf:"bytes,5,opt,name=filename,proto3" json:"filename,omitempty"` // path of the binary being executed
 	Sha256        []byte                 `protobuf:"bytes,6,opt,name=sha256,proto3" json:"sha256,omitempty"`     // content hash of the binary
 	Verdict       Verdict                `protobuf:"varint,7,opt,name=verdict,proto3,enum=integrity.v1.Verdict" json:"verdict,omitempty"`
-	TrustReason   string                 `protobuf:"bytes,8,opt,name=trust_reason,json=trustReason,proto3" json:"trust_reason,omitempty"` // which tier resolved it, or why it was blocked
+	TrustReason   string                 `protobuf:"bytes,8,opt,name=trust_reason,json=trustReason,proto3" json:"trust_reason,omitempty"`    // which tier resolved it, or why it was blocked
+	WallClockNs   uint64                 `protobuf:"varint,9,opt,name=wall_clock_ns,json=wallClockNs,proto3" json:"wall_clock_ns,omitempty"` // wall-clock timestamp, computed by daemon
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -195,6 +196,13 @@ func (x *ExecEvent) GetTrustReason() string {
 		return x.TrustReason
 	}
 	return ""
+}
+
+func (x *ExecEvent) GetWallClockNs() uint64 {
+	if x != nil {
+		return x.WallClockNs
+	}
+	return 0
 }
 
 type StatusRequest struct {
@@ -809,7 +817,7 @@ var File_api_proto_integrity_proto protoreflect.FileDescriptor
 
 const file_api_proto_integrity_proto_rawDesc = "" +
 	"\n" +
-	"\x19api/proto/integrity.proto\x12\fintegrity.v1\"\xee\x01\n" +
+	"\x19api/proto/integrity.proto\x12\fintegrity.v1\"\x92\x02\n" +
 	"\tExecEvent\x12!\n" +
 	"\ftimestamp_ns\x18\x01 \x01(\x04R\vtimestampNs\x12\x10\n" +
 	"\x03pid\x18\x02 \x01(\rR\x03pid\x12\x10\n" +
@@ -818,7 +826,8 @@ const file_api_proto_integrity_proto_rawDesc = "" +
 	"\bfilename\x18\x05 \x01(\tR\bfilename\x12\x16\n" +
 	"\x06sha256\x18\x06 \x01(\fR\x06sha256\x12/\n" +
 	"\averdict\x18\a \x01(\x0e2\x15.integrity.v1.VerdictR\averdict\x12!\n" +
-	"\ftrust_reason\x18\b \x01(\tR\vtrustReason\"\x0f\n" +
+	"\ftrust_reason\x18\b \x01(\tR\vtrustReason\x12\"\n" +
+	"\rwall_clock_ns\x18\t \x01(\x04R\vwallClockNs\"\x0f\n" +
 	"\rStatusRequest\"\xe1\x01\n" +
 	"\x0eStatusResponse\x12\x18\n" +
 	"\arunning\x18\x01 \x01(\bR\arunning\x12\x19\n" +

@@ -46,6 +46,7 @@ message ExecEvent {
   bytes   sha256       = 6;  // content hash of the binary
   Verdict verdict      = 7;
   string  trust_reason = 8;  // which tier resolved it, or why it was blocked
+  uint64  wall_clock_ns = 9; // wall-clock timestamp, computed by daemon
 }
 
 // ============================================================================

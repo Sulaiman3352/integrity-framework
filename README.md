@@ -104,7 +104,7 @@ privileges, so run the daemon with `sudo`:
 sudo ./integrity-daemon
 ```
 
-The daemon attaches to the `execve` syscall and prints every program execution on the system.
+The daemon attaches to the `execve` and `execveat` syscalls and prints every program execution on the system.
 To see it working, open a **second terminal** and run any command (`ls`, `cat`, etc.) — the
 daemon's terminal will show the corresponding events:
 

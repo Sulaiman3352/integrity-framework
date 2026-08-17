@@ -154,14 +154,15 @@ func main() {
 			continue
 		}
 
-		// eventTime := eventToWallTime(event.Timestamp)
 		pbEvent := &pb.ExecEvent{
 			TimestampNs: event.Timestamp,
 			Pid:         event.Pid,
 			Uid:         event.Uid,
 			Comm:        clean_output(event.Comm[:]),
 			Filename:    clean_output(event.Filename[:]),
-			TrustReason: "observed"}
+			WallClockNs: event.Timestamp + uint64(bootOffset),
+			TrustReason: "observed",
+		}
 		select {
 		case srv.eventCh <- pbEvent:
 			// delivered
