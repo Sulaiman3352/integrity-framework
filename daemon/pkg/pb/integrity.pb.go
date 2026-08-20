@@ -249,7 +249,8 @@ type StatusResponse struct {
 	TpmState      string                 `protobuf:"bytes,4,opt,name=tpm_state,json=tpmState,proto3" json:"tpm_state,omitempty"` // e.g. "ok", "unsealed", "fallback-hmac"
 	EventsTotal   uint64                 `protobuf:"varint,5,opt,name=events_total,json=eventsTotal,proto3" json:"events_total,omitempty"`
 	EventsBlocked uint64                 `protobuf:"varint,6,opt,name=events_blocked,json=eventsBlocked,proto3" json:"events_blocked,omitempty"`
-	Mode          string                 `protobuf:"bytes,7,opt,name=mode,proto3" json:"mode,omitempty"` // learning | permissive | enforcing | lockdown
+	Mode          string                 `protobuf:"bytes,7,opt,name=mode,proto3" json:"mode,omitempty"`                                         // learning | permissive | enforcing | lockdown
+	EventsDropped uint64                 `protobuf:"varint,8,opt,name=events_dropped,json=eventsDropped,proto3" json:"events_dropped,omitempty"` // events lost because Go channel was full
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -331,6 +332,13 @@ func (x *StatusResponse) GetMode() string {
 		return x.Mode
 	}
 	return ""
+}
+
+func (x *StatusResponse) GetEventsDropped() uint64 {
+	if x != nil {
+		return x.EventsDropped
+	}
+	return 0
 }
 
 type StreamRequest struct {
@@ -828,7 +836,7 @@ const file_api_proto_integrity_proto_rawDesc = "" +
 	"\averdict\x18\a \x01(\x0e2\x15.integrity.v1.VerdictR\averdict\x12!\n" +
 	"\ftrust_reason\x18\b \x01(\tR\vtrustReason\x12\"\n" +
 	"\rwall_clock_ns\x18\t \x01(\x04R\vwallClockNs\"\x0f\n" +
-	"\rStatusRequest\"\xe1\x01\n" +
+	"\rStatusRequest\"\x88\x02\n" +
 	"\x0eStatusResponse\x12\x18\n" +
 	"\arunning\x18\x01 \x01(\bR\arunning\x12\x19\n" +
 	"\buptime_s\x18\x02 \x01(\x04R\auptimeS\x12\x1f\n" +
@@ -837,7 +845,8 @@ const file_api_proto_integrity_proto_rawDesc = "" +
 	"\ttpm_state\x18\x04 \x01(\tR\btpmState\x12!\n" +
 	"\fevents_total\x18\x05 \x01(\x04R\veventsTotal\x12%\n" +
 	"\x0eevents_blocked\x18\x06 \x01(\x04R\reventsBlocked\x12\x12\n" +
-	"\x04mode\x18\a \x01(\tR\x04mode\"\x0f\n" +
+	"\x04mode\x18\a \x01(\tR\x04mode\x12%\n" +
+	"\x0eevents_dropped\x18\b \x01(\x04R\reventsDropped\"\x0f\n" +
 	"\rStreamRequest\"\x82\x01\n" +
 	"\x11ListEventsRequest\x12\x14\n" +
 	"\x05limit\x18\x01 \x01(\rR\x05limit\x12\x19\n" +

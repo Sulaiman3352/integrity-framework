@@ -18,13 +18,14 @@ type server struct {
 func (s *server) GetStatus(ctx context.Context, req *pb.StatusRequest) (*pb.StatusResponse, error) {
 
 	return &pb.StatusResponse{
-		Running:       true,
-		UptimeS:       0,
-		TpmPresent:    false,
-		TpmState:      "none",
-		EventsTotal:   0,
-		EventsBlocked: 0,
-		Mode:          "observing",
+		Running:        true,
+		UptimeS:        0,
+		TpmPresent:     false,
+		TpmState:       "none",
+		EventsTotal:    0,
+		EventsBlocked:  0,
+		EventsDropped:  eventsDropped.Load(),
+		Mode:           "observing",
 	}, nil
 }
 

@@ -32,7 +32,7 @@ func statusCmd() {
 	if err != nil {
 		log.Fatalf("Failed to get status: %v", err)
 	}
-	fmt.Printf("Running: %v\nMode: %v\nUptime: %vs\nTPM: %v\nTPM Status: %v\nEvents: %v total, %v blocked", stat.Running, stat.Mode, stat.UptimeS, stat.TpmPresent, stat.TpmState, stat.EventsTotal, stat.EventsBlocked)
+	fmt.Printf("Running: %v\nMode: %v\nUptime: %vs\nTPM: %v\nTPM Status: %v\nEvents: %v total, %v blocked, %v dropped", stat.Running, stat.Mode, stat.UptimeS, stat.TpmPresent, stat.TpmState, stat.EventsTotal, stat.EventsBlocked, stat.EventsDropped)
 
 }
 

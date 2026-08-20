@@ -12,8 +12,8 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
-	"time"
 
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
@@ -24,9 +24,14 @@ import (
 )
 
 const (
-	socketDir  = "/run/walia-guard"
-	socketPath = "/run/walia-guard/integrity.sock"
+	socketDir     = "/run/walia-guard"
+	socketPath    = "/run/walia-guard/integrity.sock"
+	channelBuffer = 1000
 )
+
+// eventsDropped counts events lost because the Go channel was full.
+// Read atomically by GetStatus; incremented in the main reader loop.
+var eventsDropped atomic.Uint64
 
 func clean_output(b []byte) string {
 	var n int = bytes.IndexByte(b, 0)
@@ -57,12 +62,6 @@ func computeBootOffset() int64 {
 	// note: two separate syscalls Between them a tiny slice of time passes and the fix is
 	// (sandwich: read monotonic, read realtime, read monotonic again, use the average of the two monotonic reads) but it is a little bit over-engineering
 	return realtime.Nano() - monotonic.Nano()
-}
-
-// eventToWallTime converts a bpf_ktime_get_ns() timestamp (CLOCK_MONOTONIC,
-// nanoseconds since boot) to a time.Time in the wall-clock epoch.
-func eventToWallTime(bpfTimestamp uint64) time.Time {
-	return time.Unix(0, int64(bpfTimestamp)+bootOffset)
 }
 
 func main() {
@@ -119,7 +118,7 @@ func main() {
 	defer os.Remove(socketPath)
 
 	grpcServer := grpc.NewServer()
-	srv := &server{eventCh: make(chan *pb.ExecEvent, 100)}
+	srv := &server{eventCh: make(chan *pb.ExecEvent, channelBuffer)}
 	pb.RegisterIntegrityServiceServer(grpcServer, srv)
 
 	go func() {
@@ -127,6 +126,8 @@ func main() {
 			log.Fatalf("gRPC server failed: %v", err)
 		}
 	}()
+
+	log.Printf("daemon started — socket %s, channel buffer %d", socketPath, channelBuffer)
 
 	// Signal handling — clean shutdown on Ctrl+C / SIGTERM
 	sigCh := make(chan os.Signal, 1)
@@ -167,7 +168,7 @@ func main() {
 		case srv.eventCh <- pbEvent:
 			// delivered
 		default:
-			// channel full — drop for this slow client, keep the reader moving (This is Just for the current phase)
+			eventsDropped.Add(1)
 		}
 	}
 }

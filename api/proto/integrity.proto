@@ -56,13 +56,14 @@ message ExecEvent {
 message StatusRequest {}
 
 message StatusResponse {
-  bool   running       = 1;
-  uint64 uptime_s      = 2;
-  bool   tpm_present   = 3;
-  string tpm_state     = 4;  // e.g. "ok", "unsealed", "fallback-hmac"
-  uint64 events_total  = 5;
+  bool   running        = 1;
+  uint64 uptime_s       = 2;
+  bool   tpm_present    = 3;
+  string tpm_state      = 4;  // e.g. "ok", "unsealed", "fallback-hmac"
+  uint64 events_total   = 5;
   uint64 events_blocked = 6;
-  string mode          = 7;  // learning | permissive | enforcing | lockdown
+  string mode           = 7;  // learning | permissive | enforcing | lockdown
+  uint64 events_dropped = 8;  // events lost because Go channel was full
 }
 
 message StreamRequest {
