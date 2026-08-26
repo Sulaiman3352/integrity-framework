@@ -242,17 +242,20 @@ func (*StatusRequest) Descriptor() ([]byte, []int) {
 }
 
 type StatusResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Running       bool                   `protobuf:"varint,1,opt,name=running,proto3" json:"running,omitempty"`
-	UptimeS       uint64                 `protobuf:"varint,2,opt,name=uptime_s,json=uptimeS,proto3" json:"uptime_s,omitempty"`
-	TpmPresent    bool                   `protobuf:"varint,3,opt,name=tpm_present,json=tpmPresent,proto3" json:"tpm_present,omitempty"`
-	TpmState      string                 `protobuf:"bytes,4,opt,name=tpm_state,json=tpmState,proto3" json:"tpm_state,omitempty"` // e.g. "ok", "unsealed", "fallback-hmac"
-	EventsTotal   uint64                 `protobuf:"varint,5,opt,name=events_total,json=eventsTotal,proto3" json:"events_total,omitempty"`
-	EventsBlocked uint64                 `protobuf:"varint,6,opt,name=events_blocked,json=eventsBlocked,proto3" json:"events_blocked,omitempty"`
-	Mode          string                 `protobuf:"bytes,7,opt,name=mode,proto3" json:"mode,omitempty"`                                         // learning | permissive | enforcing | lockdown
-	EventsDropped uint64                 `protobuf:"varint,8,opt,name=events_dropped,json=eventsDropped,proto3" json:"events_dropped,omitempty"` // events lost because Go channel was full
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Running          bool                   `protobuf:"varint,1,opt,name=running,proto3" json:"running,omitempty"`
+	UptimeS          uint64                 `protobuf:"varint,2,opt,name=uptime_s,json=uptimeS,proto3" json:"uptime_s,omitempty"`
+	TpmPresent       bool                   `protobuf:"varint,3,opt,name=tpm_present,json=tpmPresent,proto3" json:"tpm_present,omitempty"`
+	TpmState         string                 `protobuf:"bytes,4,opt,name=tpm_state,json=tpmState,proto3" json:"tpm_state,omitempty"` // e.g. "ok", "unsealed", "fallback-hmac"
+	EventsTotal      uint64                 `protobuf:"varint,5,opt,name=events_total,json=eventsTotal,proto3" json:"events_total,omitempty"`
+	EventsBlocked    uint64                 `protobuf:"varint,6,opt,name=events_blocked,json=eventsBlocked,proto3" json:"events_blocked,omitempty"`
+	Mode             string                 `protobuf:"bytes,7,opt,name=mode,proto3" json:"mode,omitempty"`                                                    // learning | permissive | enforcing | lockdown
+	EventsDropped    uint64                 `protobuf:"varint,8,opt,name=events_dropped,json=eventsDropped,proto3" json:"events_dropped,omitempty"`            // events lost because Go channel was full
+	EventsDroppedBpf uint64                 `protobuf:"varint,9,opt,name=events_dropped_bpf,json=eventsDroppedBpf,proto3" json:"events_dropped_bpf,omitempty"` // events lost because BPF ring buffer was full
+	RingReads        uint64                 `protobuf:"varint,10,opt,name=ring_reads,json=ringReads,proto3" json:"ring_reads,omitempty"`                       // events successfully read from BPF ring buffer
+	DecodeErrors     uint64                 `protobuf:"varint,11,opt,name=decode_errors,json=decodeErrors,proto3" json:"decode_errors,omitempty"`              // events that failed binary decoding in daemon
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *StatusResponse) Reset() {
@@ -337,6 +340,27 @@ func (x *StatusResponse) GetMode() string {
 func (x *StatusResponse) GetEventsDropped() uint64 {
 	if x != nil {
 		return x.EventsDropped
+	}
+	return 0
+}
+
+func (x *StatusResponse) GetEventsDroppedBpf() uint64 {
+	if x != nil {
+		return x.EventsDroppedBpf
+	}
+	return 0
+}
+
+func (x *StatusResponse) GetRingReads() uint64 {
+	if x != nil {
+		return x.RingReads
+	}
+	return 0
+}
+
+func (x *StatusResponse) GetDecodeErrors() uint64 {
+	if x != nil {
+		return x.DecodeErrors
 	}
 	return 0
 }
@@ -836,7 +860,7 @@ const file_api_proto_integrity_proto_rawDesc = "" +
 	"\averdict\x18\a \x01(\x0e2\x15.integrity.v1.VerdictR\averdict\x12!\n" +
 	"\ftrust_reason\x18\b \x01(\tR\vtrustReason\x12\"\n" +
 	"\rwall_clock_ns\x18\t \x01(\x04R\vwallClockNs\"\x0f\n" +
-	"\rStatusRequest\"\x88\x02\n" +
+	"\rStatusRequest\"\xfa\x02\n" +
 	"\x0eStatusResponse\x12\x18\n" +
 	"\arunning\x18\x01 \x01(\bR\arunning\x12\x19\n" +
 	"\buptime_s\x18\x02 \x01(\x04R\auptimeS\x12\x1f\n" +
@@ -846,7 +870,12 @@ const file_api_proto_integrity_proto_rawDesc = "" +
 	"\fevents_total\x18\x05 \x01(\x04R\veventsTotal\x12%\n" +
 	"\x0eevents_blocked\x18\x06 \x01(\x04R\reventsBlocked\x12\x12\n" +
 	"\x04mode\x18\a \x01(\tR\x04mode\x12%\n" +
-	"\x0eevents_dropped\x18\b \x01(\x04R\reventsDropped\"\x0f\n" +
+	"\x0eevents_dropped\x18\b \x01(\x04R\reventsDropped\x12,\n" +
+	"\x12events_dropped_bpf\x18\t \x01(\x04R\x10eventsDroppedBpf\x12\x1d\n" +
+	"\n" +
+	"ring_reads\x18\n" +
+	" \x01(\x04R\tringReads\x12#\n" +
+	"\rdecode_errors\x18\v \x01(\x04R\fdecodeErrors\"\x0f\n" +
 	"\rStreamRequest\"\x82\x01\n" +
 	"\x11ListEventsRequest\x12\x14\n" +
 	"\x05limit\x18\x01 \x01(\rR\x05limit\x12\x19\n" +

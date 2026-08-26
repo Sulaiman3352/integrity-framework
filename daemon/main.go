@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // Copyright (C) 2026 Sulayman Seid Ymam
- 
+
 package main
 
 import (
@@ -15,6 +15,7 @@ import (
 	"sync/atomic"
 	"syscall"
 
+	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/cilium/ebpf/rlimit"
@@ -32,6 +33,12 @@ const (
 // eventsDropped counts events lost because the Go channel was full.
 // Read atomically by GetStatus; incremented in the main reader loop.
 var eventsDropped atomic.Uint64
+
+// ringReads counts total events successfully read from the BPF ring buffer.
+var ringReads atomic.Uint64
+
+// decodeErrors counts events that failed binary decoding.
+var decodeErrors atomic.Uint64
 
 func clean_output(b []byte) string {
 	var n int = bytes.IndexByte(b, 0)
@@ -77,20 +84,31 @@ func main() {
 	}
 	defer objs.Close()
 
-	// Attach to execve — the classic path-based execution syscall.
-	tpExecve, err := link.Tracepoint("syscalls", "sys_enter_execve", objs.HandleExecve, nil)
+	// Attach fentry to the real x86_64 syscall entry functions.
+	//
+	// fentry is a BPF link (bpf_link_create): it is system-wide and fires on
+	// every CPU. The legacy perf-event tracepoint attach (link.Tracepoint)
+	// pins its event to CPU 0 in cilium/ebpf v0.21.0, silently losing events
+	// from all other CPUs — that is why the old probe missed most commands.
+	lkExecve, err := link.AttachTracing(link.TracingOptions{
+		Program:    objs.HandleExecve,
+		AttachType: ebpf.AttachTraceFEntry,
+	})
 	if err != nil {
-		log.Fatalf("failed to attach execve tracepoint: %v", err)
+		log.Fatalf("failed to attach fentry execve: %v", err)
 	}
-	defer tpExecve.Close()
+	defer lkExecve.Close()
 
-	// Attach to execveat — covers fexecve() and memfd-based execution, which
+	// fentry on execveat — covers fexecve() and memfd-based execution, which
 	// never go through execve and would otherwise be invisible to the daemon.
-	tpExecveat, err := link.Tracepoint("syscalls", "sys_enter_execveat", objs.HandleExecveat, nil)
+	lkExecveat, err := link.AttachTracing(link.TracingOptions{
+		Program:    objs.HandleExecveat,
+		AttachType: ebpf.AttachTraceFEntry,
+	})
 	if err != nil {
-		log.Fatalf("failed to attach execveat tracepoint: %v", err)
+		log.Fatalf("failed to attach fentry execveat: %v", err)
 	}
-	defer tpExecveat.Close()
+	defer lkExecveat.Close()
 
 	// Open a Reader on The Ring Buffer
 	rd, err := ringbuf.NewReader(objs.Events)
@@ -118,7 +136,7 @@ func main() {
 	defer os.Remove(socketPath)
 
 	grpcServer := grpc.NewServer()
-	srv := &server{eventCh: make(chan *pb.ExecEvent, channelBuffer)}
+	srv := &server{eventCh: make(chan *pb.ExecEvent, channelBuffer), dropCount: objs.DropCount, shutdown: make(chan struct{})}
 	pb.RegisterIntegrityServiceServer(grpcServer, srv)
 
 	go func() {
@@ -144,6 +162,7 @@ func main() {
 		if err != nil {
 			if errors.Is(err, ringbuf.ErrClosed) { // Clean-Shutdown
 				log.Println("Thank you for using Walia Guard🤗, See you soon!👋")
+				close(srv.shutdown)
 				grpcServer.GracefulStop()
 				return
 			}
@@ -151,9 +170,11 @@ func main() {
 			continue
 		}
 		if err := binary.Read(bytes.NewReader(record.RawSample), binary.LittleEndian, &event); err != nil {
+			decodeErrors.Add(1)
 			log.Printf("error decoding: %v", err)
 			continue
 		}
+		ringReads.Add(1)
 
 		pbEvent := &pb.ExecEvent{
 			TimestampNs: event.Timestamp,

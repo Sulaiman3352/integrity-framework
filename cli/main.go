@@ -12,7 +12,9 @@ import (
 
 	"github.com/sulaiman3352/integrity-framework/daemon/pkg/pb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 // function to create a new client
@@ -32,7 +34,7 @@ func statusCmd() {
 	if err != nil {
 		log.Fatalf("Failed to get status: %v", err)
 	}
-	fmt.Printf("Running: %v\nMode: %v\nUptime: %vs\nTPM: %v\nTPM Status: %v\nEvents: %v total, %v blocked, %v dropped", stat.Running, stat.Mode, stat.UptimeS, stat.TpmPresent, stat.TpmState, stat.EventsTotal, stat.EventsBlocked, stat.EventsDropped)
+	fmt.Printf("Running: %v\nMode: %v\nUptime: %vs\nTPM: %v\nTPM Status: %v\nEvents: %v total, %v blocked, %v dropped (channel), %v dropped (ringbuf)\nRing reads: %v, Decode errors: %v", stat.Running, stat.Mode, stat.UptimeS, stat.TpmPresent, stat.TpmState, stat.EventsTotal, stat.EventsBlocked, stat.EventsDropped, stat.EventsDroppedBpf, stat.RingReads, stat.DecodeErrors)
 
 }
 
@@ -47,8 +49,11 @@ func watchCmd() {
 
 	for {
 		event, err := stream.Recv()
-		if errors.Is(err, io.EOF) {
-			fmt.Printf("That is all for now")
+		if status.Code(err) == codes.Unavailable {
+			fmt.Println("stream ended, walia-guard daemon has stopped")
+			break
+		} else if errors.Is(err, io.EOF) {
+			fmt.Printf("That is all for now \n")
 			break
 		} else if err != nil {
 			log.Fatalf("something went wrong: %v", err)

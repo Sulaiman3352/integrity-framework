@@ -56,14 +56,17 @@ message ExecEvent {
 message StatusRequest {}
 
 message StatusResponse {
-  bool   running        = 1;
-  uint64 uptime_s       = 2;
-  bool   tpm_present    = 3;
-  string tpm_state      = 4;  // e.g. "ok", "unsealed", "fallback-hmac"
-  uint64 events_total   = 5;
-  uint64 events_blocked = 6;
-  string mode           = 7;  // learning | permissive | enforcing | lockdown
-  uint64 events_dropped = 8;  // events lost because Go channel was full
+  bool   running           = 1;
+  uint64 uptime_s          = 2;
+  bool   tpm_present       = 3;
+  string tpm_state         = 4;  // e.g. "ok", "unsealed", "fallback-hmac"
+  uint64 events_total      = 5;
+  uint64 events_blocked    = 6;
+  string mode              = 7;  // learning | permissive | enforcing | lockdown
+  uint64 events_dropped    = 8;  // events lost because Go channel was full
+  uint64 events_dropped_bpf = 9; // events lost because BPF ring buffer was full
+  uint64 ring_reads         = 10; // events successfully read from BPF ring buffer
+  uint64 decode_errors      = 11; // events that failed binary decoding in daemon
 }
 
 message StreamRequest {
