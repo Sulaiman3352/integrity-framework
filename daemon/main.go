@@ -9,6 +9,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"log"
+	"math/bits"
 	"net"
 	"os"
 	"os/signal"
@@ -28,6 +29,14 @@ const (
 	socketDir     = "/run/walia-guard"
 	socketPath    = "/run/walia-guard/integrity.sock"
 	channelBuffer = 1000
+
+	// Ring-buffer sizing. The event ring buffer is a SINGLE BPF_MAP_TYPE_RINGBUF
+	// shared by all CPUs (not per-CPU), so the more cores that can run the probe
+	// concurrently, the more producers race the single consumer between reads.
+	// We therefore budget ringbufPerCPUBytes of buffer per CPU, with a floor of
+	// ringbufMinBytes on low-core machines. See ringbufBytes.
+	ringbufPerCPUBytes = 64 * 1024  // 64 KB per CPU
+	ringbufMinBytes    = 256 * 1024 // floor
 )
 
 // eventsDropped counts events lost because the Go channel was full.
@@ -71,15 +80,44 @@ func computeBootOffset() int64 {
 	return realtime.Nano() - monotonic.Nano()
 }
 
+// ringbufBytes returns the size for the shared event ring buffer given the
+// number of CPUs the kernel can schedule the probe on, scaling at
+// ringbufPerCPUBytes per CPU with a floor of ringbufMinBytes.
+//
+// The kernel requires a ring-buffer size that is a power of two and a multiple
+// of the page size, so the budget is rounded UP to the next power of two
+// (which, being >= the 4 KB floor, is always page-aligned). Examples at
+// 64 KB/CPU: 4 cores -> 256 KB, 8 -> 512 KB, 16 -> 1 MB.
+func ringbufBytes(nCPU int) uint32 {
+	size := max(ringbufMinBytes, nCPU*ringbufPerCPUBytes)
+	// bits.Len(size-1) is the exponent of the smallest power of two >= size;
+	// for an exact power of two it returns size unchanged.
+	return uint32(1) << bits.Len(uint(size-1))
+}
+
 func main() {
 	// Remove The Memlock Limit
 	if err := rlimit.RemoveMemlock(); err != nil {
 		log.Fatalf("failed to remove Memlock limit: %v", err)
 	}
 
-	// Load The eBPF Objects Into The Kernel
+	// Load the eBPF spec, then size the shared event ring buffer from the CPU
+	// count BEFORE loading it into the kernel (max_entries is fixed at load time).
+	spec, err := loadBpf()
+	if err != nil {
+		log.Fatalf("failed to load eBPF spec: %v", err)
+	}
+	nCPU, err := ebpf.PossibleCPU()
+	if err != nil || nCPU < 1 {
+		// Fall back to the floor rather than failing to start over a sizing hint.
+		nCPU = 1
+	}
+	rbSize := ringbufBytes(nCPU)
+	spec.Maps["events"].MaxEntries = rbSize
+	log.Printf("event ring buffer sized to %d KB (%d possible CPUs)", rbSize/1024, nCPU)
+
 	var objs bpfObjects
-	if err := loadBpfObjects(&objs, nil); err != nil {
+	if err := spec.LoadAndAssign(&objs, nil); err != nil {
 		log.Fatalf("failed to load eBPF objects: %v", err)
 	}
 	defer objs.Close()

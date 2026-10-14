@@ -20,7 +20,11 @@ struct event {
 };
 struct {
     __uint(type, BPF_MAP_TYPE_RINGBUF);   // "what kind of map?" → a ring buffer
-    __uint(max_entries, 256 * 1024);      // "how big?"          → 256 KB
+    __uint(max_entries, 256 * 1024);      // placeholder (256 KB): the daemon overrides
+                                          // this at load time, scaling it by CPU count
+                                          // (see ringbufBytes in daemon/main.go). This
+                                          // value only applies if the object is loaded
+                                          // without the daemon (e.g. raw bpftool).
 } events SEC(".maps");                    // name it "events", put it in the maps section
 
 struct {
