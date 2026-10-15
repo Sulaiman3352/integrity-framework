@@ -11,10 +11,14 @@
 #define TASK_COMM_LEN 16
 #define MAX_FILENAME_LEN 256
 
+#define EXEC_SOURCE_EXECVE 1
+#define EXEC_SOURCE_EXECVEAT 2
+
 struct event {
     __u64 timestamp;    
     __u32 pid;
     __u32 uid;
+    __u8  source;
     __u8  comm[TASK_COMM_LEN];
     __u8  filename[MAX_FILENAME_LEN]; // I chosed here u8 over char because it is an explicitly unsigned single byte from the kernel's own type family
 };
@@ -36,7 +40,7 @@ struct {
 
 struct event *unused_event __attribute__((unused)); // the perpose of this is to force the compiler to acknowledge struct event as a used type → it gets preserved in the BTF → bpf2go finds it → generates the Go struct automatically.
 
-static __always_inline int submit_exec_event(const char *filename)
+static __always_inline int submit_exec_event(const char *filename, __u8 source)
 {
     struct event *e;
 
@@ -53,6 +57,7 @@ static __always_inline int submit_exec_event(const char *filename)
     e->timestamp = bpf_ktime_get_ns();
     e->pid = bpf_get_current_pid_tgid() >> 32;
     e->uid = bpf_get_current_uid_gid() & 0xffffffff;
+    e->source = source;
     bpf_get_current_comm(&e->comm, sizeof(e->comm));
 
     // Zero the filename buffer FIRST, so stale ring-buffer data can't show through.
@@ -92,13 +97,13 @@ static __always_inline int submit_exec_event(const char *filename)
 SEC("fentry/__x64_sys_execve")
 int BPF_PROG(handle_execve, struct pt_regs *regs)
 {
-    return submit_exec_event((const char *)PT_REGS_PARM1_CORE_SYSCALL(regs));
+    return submit_exec_event((const char *)PT_REGS_PARM1_CORE_SYSCALL(regs), EXEC_SOURCE_EXECVE);
 }
 
 SEC("fentry/__x64_sys_execveat")
 int BPF_PROG(handle_execveat, struct pt_regs *regs)
 {
-    return submit_exec_event((const char *)PT_REGS_PARM2_CORE_SYSCALL(regs));
+    return submit_exec_event((const char *)PT_REGS_PARM2_CORE_SYSCALL(regs), EXEC_SOURCE_EXECVEAT);
 }
 
 char LICENSE[] SEC("license") = "GPL";

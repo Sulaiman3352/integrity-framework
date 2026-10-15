@@ -218,6 +218,7 @@ func main() {
 			TimestampNs: event.Timestamp,
 			Pid:         event.Pid,
 			Uid:         event.Uid,
+			Source:      pb.ExecSource(event.Source),
 			Comm:        clean_output(event.Comm[:]),
 			Filename:    clean_output(event.Filename[:]),
 			WallClockNs: event.Timestamp + uint64(bootOffset),

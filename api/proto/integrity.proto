@@ -36,6 +36,13 @@ enum Verdict {
   VERDICT_SUSPICIOUS = 4;  // allowed but flagged (e.g. anomalous behavior)
 }
 
+// This is for knowing the source of exec
+enum ExecSource {
+  EXEC_SOURCE_UNKNOWN   = 0;
+  EXEC_SOURCE_EXECVE    = 1;
+  EXEC_SOURCE_EXECVEAT  = 2;
+}
+
 // ExecEvent is emitted when a process attempts to execute.
 message ExecEvent {
   uint64  timestamp_ns = 1;  // nanoseconds since boot (kernel time)
@@ -47,6 +54,7 @@ message ExecEvent {
   Verdict verdict      = 7;
   string  trust_reason = 8;  // which tier resolved it, or why it was blocked
   uint64  wall_clock_ns = 9; // wall-clock timestamp, computed by daemon
+  ExecSource source     = 10;
 }
 
 // ============================================================================

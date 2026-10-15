@@ -96,6 +96,56 @@ func (Verdict) EnumDescriptor() ([]byte, []int) {
 	return file_api_proto_integrity_proto_rawDescGZIP(), []int{0}
 }
 
+// This is for knowing the source of exec
+type ExecSource int32
+
+const (
+	ExecSource_EXEC_SOURCE_UNKNOWN  ExecSource = 0
+	ExecSource_EXEC_SOURCE_EXECVE   ExecSource = 1
+	ExecSource_EXEC_SOURCE_EXECVEAT ExecSource = 2
+)
+
+// Enum value maps for ExecSource.
+var (
+	ExecSource_name = map[int32]string{
+		0: "EXEC_SOURCE_UNKNOWN",
+		1: "EXEC_SOURCE_EXECVE",
+		2: "EXEC_SOURCE_EXECVEAT",
+	}
+	ExecSource_value = map[string]int32{
+		"EXEC_SOURCE_UNKNOWN":  0,
+		"EXEC_SOURCE_EXECVE":   1,
+		"EXEC_SOURCE_EXECVEAT": 2,
+	}
+)
+
+func (x ExecSource) Enum() *ExecSource {
+	p := new(ExecSource)
+	*p = x
+	return p
+}
+
+func (x ExecSource) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ExecSource) Descriptor() protoreflect.EnumDescriptor {
+	return file_api_proto_integrity_proto_enumTypes[1].Descriptor()
+}
+
+func (ExecSource) Type() protoreflect.EnumType {
+	return &file_api_proto_integrity_proto_enumTypes[1]
+}
+
+func (x ExecSource) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ExecSource.Descriptor instead.
+func (ExecSource) EnumDescriptor() ([]byte, []int) {
+	return file_api_proto_integrity_proto_rawDescGZIP(), []int{1}
+}
+
 // ExecEvent is emitted when a process attempts to execute.
 type ExecEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -108,6 +158,7 @@ type ExecEvent struct {
 	Verdict       Verdict                `protobuf:"varint,7,opt,name=verdict,proto3,enum=integrity.v1.Verdict" json:"verdict,omitempty"`
 	TrustReason   string                 `protobuf:"bytes,8,opt,name=trust_reason,json=trustReason,proto3" json:"trust_reason,omitempty"`    // which tier resolved it, or why it was blocked
 	WallClockNs   uint64                 `protobuf:"varint,9,opt,name=wall_clock_ns,json=wallClockNs,proto3" json:"wall_clock_ns,omitempty"` // wall-clock timestamp, computed by daemon
+	Source        ExecSource             `protobuf:"varint,10,opt,name=source,proto3,enum=integrity.v1.ExecSource" json:"source,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -203,6 +254,13 @@ func (x *ExecEvent) GetWallClockNs() uint64 {
 		return x.WallClockNs
 	}
 	return 0
+}
+
+func (x *ExecEvent) GetSource() ExecSource {
+	if x != nil {
+		return x.Source
+	}
+	return ExecSource_EXEC_SOURCE_UNKNOWN
 }
 
 type StatusRequest struct {
@@ -849,7 +907,7 @@ var File_api_proto_integrity_proto protoreflect.FileDescriptor
 
 const file_api_proto_integrity_proto_rawDesc = "" +
 	"\n" +
-	"\x19api/proto/integrity.proto\x12\fintegrity.v1\"\x92\x02\n" +
+	"\x19api/proto/integrity.proto\x12\fintegrity.v1\"\xc4\x02\n" +
 	"\tExecEvent\x12!\n" +
 	"\ftimestamp_ns\x18\x01 \x01(\x04R\vtimestampNs\x12\x10\n" +
 	"\x03pid\x18\x02 \x01(\rR\x03pid\x12\x10\n" +
@@ -859,7 +917,9 @@ const file_api_proto_integrity_proto_rawDesc = "" +
 	"\x06sha256\x18\x06 \x01(\fR\x06sha256\x12/\n" +
 	"\averdict\x18\a \x01(\x0e2\x15.integrity.v1.VerdictR\averdict\x12!\n" +
 	"\ftrust_reason\x18\b \x01(\tR\vtrustReason\x12\"\n" +
-	"\rwall_clock_ns\x18\t \x01(\x04R\vwallClockNs\"\x0f\n" +
+	"\rwall_clock_ns\x18\t \x01(\x04R\vwallClockNs\x120\n" +
+	"\x06source\x18\n" +
+	" \x01(\x0e2\x18.integrity.v1.ExecSourceR\x06source\"\x0f\n" +
 	"\rStatusRequest\"\xfa\x02\n" +
 	"\x0eStatusResponse\x12\x18\n" +
 	"\arunning\x18\x01 \x01(\bR\arunning\x12\x19\n" +
@@ -906,7 +966,12 @@ const file_api_proto_integrity_proto_rawDesc = "" +
 	"\rVERDICT_ALLOW\x10\x01\x12\x11\n" +
 	"\rVERDICT_BLOCK\x10\x02\x12\x16\n" +
 	"\x12VERDICT_QUARANTINE\x10\x03\x12\x16\n" +
-	"\x12VERDICT_SUSPICIOUS\x10\x042\xbb\x04\n" +
+	"\x12VERDICT_SUSPICIOUS\x10\x04*W\n" +
+	"\n" +
+	"ExecSource\x12\x17\n" +
+	"\x13EXEC_SOURCE_UNKNOWN\x10\x00\x12\x16\n" +
+	"\x12EXEC_SOURCE_EXECVE\x10\x01\x12\x18\n" +
+	"\x14EXEC_SOURCE_EXECVEAT\x10\x022\xbb\x04\n" +
 	"\x10IntegrityService\x12F\n" +
 	"\tGetStatus\x12\x1b.integrity.v1.StatusRequest\x1a\x1c.integrity.v1.StatusResponse\x12F\n" +
 	"\fStreamEvents\x12\x1b.integrity.v1.StreamRequest\x1a\x17.integrity.v1.ExecEvent0\x01\x12O\n" +
@@ -929,48 +994,50 @@ func file_api_proto_integrity_proto_rawDescGZIP() []byte {
 	return file_api_proto_integrity_proto_rawDescData
 }
 
-var file_api_proto_integrity_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_api_proto_integrity_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_api_proto_integrity_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_api_proto_integrity_proto_goTypes = []any{
 	(Verdict)(0),                   // 0: integrity.v1.Verdict
-	(*ExecEvent)(nil),              // 1: integrity.v1.ExecEvent
-	(*StatusRequest)(nil),          // 2: integrity.v1.StatusRequest
-	(*StatusResponse)(nil),         // 3: integrity.v1.StatusResponse
-	(*StreamRequest)(nil),          // 4: integrity.v1.StreamRequest
-	(*ListEventsRequest)(nil),      // 5: integrity.v1.ListEventsRequest
-	(*ListEventsResponse)(nil),     // 6: integrity.v1.ListEventsResponse
-	(*WhitelistEntry)(nil),         // 7: integrity.v1.WhitelistEntry
-	(*WhitelistResponse)(nil),      // 8: integrity.v1.WhitelistResponse
-	(*RemoveWhitelistRequest)(nil), // 9: integrity.v1.RemoveWhitelistRequest
-	(*ListWhitelistRequest)(nil),   // 10: integrity.v1.ListWhitelistRequest
-	(*ListWhitelistResponse)(nil),  // 11: integrity.v1.ListWhitelistResponse
-	(*StatsRequest)(nil),           // 12: integrity.v1.StatsRequest
-	(*StatsResponse)(nil),          // 13: integrity.v1.StatsResponse
+	(ExecSource)(0),                // 1: integrity.v1.ExecSource
+	(*ExecEvent)(nil),              // 2: integrity.v1.ExecEvent
+	(*StatusRequest)(nil),          // 3: integrity.v1.StatusRequest
+	(*StatusResponse)(nil),         // 4: integrity.v1.StatusResponse
+	(*StreamRequest)(nil),          // 5: integrity.v1.StreamRequest
+	(*ListEventsRequest)(nil),      // 6: integrity.v1.ListEventsRequest
+	(*ListEventsResponse)(nil),     // 7: integrity.v1.ListEventsResponse
+	(*WhitelistEntry)(nil),         // 8: integrity.v1.WhitelistEntry
+	(*WhitelistResponse)(nil),      // 9: integrity.v1.WhitelistResponse
+	(*RemoveWhitelistRequest)(nil), // 10: integrity.v1.RemoveWhitelistRequest
+	(*ListWhitelistRequest)(nil),   // 11: integrity.v1.ListWhitelistRequest
+	(*ListWhitelistResponse)(nil),  // 12: integrity.v1.ListWhitelistResponse
+	(*StatsRequest)(nil),           // 13: integrity.v1.StatsRequest
+	(*StatsResponse)(nil),          // 14: integrity.v1.StatsResponse
 }
 var file_api_proto_integrity_proto_depIdxs = []int32{
 	0,  // 0: integrity.v1.ExecEvent.verdict:type_name -> integrity.v1.Verdict
-	0,  // 1: integrity.v1.ListEventsRequest.verdict_filter:type_name -> integrity.v1.Verdict
-	1,  // 2: integrity.v1.ListEventsResponse.events:type_name -> integrity.v1.ExecEvent
-	7,  // 3: integrity.v1.ListWhitelistResponse.entries:type_name -> integrity.v1.WhitelistEntry
-	2,  // 4: integrity.v1.IntegrityService.GetStatus:input_type -> integrity.v1.StatusRequest
-	4,  // 5: integrity.v1.IntegrityService.StreamEvents:input_type -> integrity.v1.StreamRequest
-	5,  // 6: integrity.v1.IntegrityService.ListEvents:input_type -> integrity.v1.ListEventsRequest
-	7,  // 7: integrity.v1.IntegrityService.AddWhitelist:input_type -> integrity.v1.WhitelistEntry
-	9,  // 8: integrity.v1.IntegrityService.RemoveWhitelist:input_type -> integrity.v1.RemoveWhitelistRequest
-	10, // 9: integrity.v1.IntegrityService.ListWhitelist:input_type -> integrity.v1.ListWhitelistRequest
-	12, // 10: integrity.v1.IntegrityService.GetStats:input_type -> integrity.v1.StatsRequest
-	3,  // 11: integrity.v1.IntegrityService.GetStatus:output_type -> integrity.v1.StatusResponse
-	1,  // 12: integrity.v1.IntegrityService.StreamEvents:output_type -> integrity.v1.ExecEvent
-	6,  // 13: integrity.v1.IntegrityService.ListEvents:output_type -> integrity.v1.ListEventsResponse
-	8,  // 14: integrity.v1.IntegrityService.AddWhitelist:output_type -> integrity.v1.WhitelistResponse
-	8,  // 15: integrity.v1.IntegrityService.RemoveWhitelist:output_type -> integrity.v1.WhitelistResponse
-	11, // 16: integrity.v1.IntegrityService.ListWhitelist:output_type -> integrity.v1.ListWhitelistResponse
-	13, // 17: integrity.v1.IntegrityService.GetStats:output_type -> integrity.v1.StatsResponse
-	11, // [11:18] is the sub-list for method output_type
-	4,  // [4:11] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	1,  // 1: integrity.v1.ExecEvent.source:type_name -> integrity.v1.ExecSource
+	0,  // 2: integrity.v1.ListEventsRequest.verdict_filter:type_name -> integrity.v1.Verdict
+	2,  // 3: integrity.v1.ListEventsResponse.events:type_name -> integrity.v1.ExecEvent
+	8,  // 4: integrity.v1.ListWhitelistResponse.entries:type_name -> integrity.v1.WhitelistEntry
+	3,  // 5: integrity.v1.IntegrityService.GetStatus:input_type -> integrity.v1.StatusRequest
+	5,  // 6: integrity.v1.IntegrityService.StreamEvents:input_type -> integrity.v1.StreamRequest
+	6,  // 7: integrity.v1.IntegrityService.ListEvents:input_type -> integrity.v1.ListEventsRequest
+	8,  // 8: integrity.v1.IntegrityService.AddWhitelist:input_type -> integrity.v1.WhitelistEntry
+	10, // 9: integrity.v1.IntegrityService.RemoveWhitelist:input_type -> integrity.v1.RemoveWhitelistRequest
+	11, // 10: integrity.v1.IntegrityService.ListWhitelist:input_type -> integrity.v1.ListWhitelistRequest
+	13, // 11: integrity.v1.IntegrityService.GetStats:input_type -> integrity.v1.StatsRequest
+	4,  // 12: integrity.v1.IntegrityService.GetStatus:output_type -> integrity.v1.StatusResponse
+	2,  // 13: integrity.v1.IntegrityService.StreamEvents:output_type -> integrity.v1.ExecEvent
+	7,  // 14: integrity.v1.IntegrityService.ListEvents:output_type -> integrity.v1.ListEventsResponse
+	9,  // 15: integrity.v1.IntegrityService.AddWhitelist:output_type -> integrity.v1.WhitelistResponse
+	9,  // 16: integrity.v1.IntegrityService.RemoveWhitelist:output_type -> integrity.v1.WhitelistResponse
+	12, // 17: integrity.v1.IntegrityService.ListWhitelist:output_type -> integrity.v1.ListWhitelistResponse
+	14, // 18: integrity.v1.IntegrityService.GetStats:output_type -> integrity.v1.StatsResponse
+	12, // [12:19] is the sub-list for method output_type
+	5,  // [5:12] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_integrity_proto_init() }
@@ -983,7 +1050,7 @@ func file_api_proto_integrity_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_integrity_proto_rawDesc), len(file_api_proto_integrity_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,

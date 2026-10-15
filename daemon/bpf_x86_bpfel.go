@@ -18,8 +18,10 @@ type bpfEvent struct {
 	Timestamp uint64
 	Pid       uint32
 	Uid       uint32
+	Source    uint8
 	Comm      [16]uint8
 	Filename  [256]uint8
+	_         [7]byte
 }
 
 // loadBpf returns the embedded CollectionSpec for bpf.
