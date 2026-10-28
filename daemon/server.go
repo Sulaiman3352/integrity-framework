@@ -15,8 +15,8 @@ type server struct {
 	pb.UnimplementedIntegrityServiceServer
 
 	eventCh   chan *pb.ExecEvent
-	dropCount *ebpf.Map // BPF drop_count map, read in GetStatus
-	shutdown  chan struct{}   //close when the daemon shutdown
+	dropCount *ebpf.Map     // BPF drop_count map, read in GetStatus
+	shutdown  chan struct{} //close when the daemon shutdown
 }
 
 func (s *server) GetStatus(ctx context.Context, req *pb.StatusRequest) (*pb.StatusResponse, error) {
@@ -49,7 +49,7 @@ func (s *server) StreamEvents(req *pb.StreamRequest, stream grpc.ServerStreaming
 		select {
 		case <-stream.Context().Done():
 			return stream.Context().Err()
-		case <-s.shutdown:          
+		case <-s.shutdown:
 			return status.Error(codes.Unavailable, "walia-guard daemon is shutting down")
 		case event := <-s.eventCh:
 			if err := stream.Send(event); err != nil {

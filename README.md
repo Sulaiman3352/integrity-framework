@@ -15,7 +15,7 @@ Two sub-directories carry their own licenses for technical reasons:
 ## Building from Source
 
 > **Platform:** Linux only (the daemon uses eBPF and runs in the kernel). Tested on
-> Fedora 43, kernel 7.0.6, x86-64. Should work on any modern Linux with a recent kernel
+> Fedora 43, kernel 7.2.9, x86-64. Should work on any modern Linux with a recent kernel
 > (5.8+ for ring buffer support) and BTF enabled.
 
 ### 1. Prerequisites
@@ -137,6 +137,7 @@ go build -o integrity-daemon . && sudo ./integrity-daemon
 | `go generate` fails: clang errors                  | `clang` / `libbpf-devel` not installed, or `kern/vmlinux.h` not generated (step 2). |
 | `undefined: bpfEvent` when building                | The `gen.go` directive needs `-type event`; re-run `go generate`.                   |
 | Build OK, but `operation not permitted` at runtime | Run with `sudo` (eBPF load/attach needs privileges).                                |
+| `load vmlinux: parsing .BTF header: header contains non-zero trailer` | The running kernel's BTF header is newer (larger) than the pinned `cilium/ebpf` can parse — the BTF itself is fine (`bpftool btf dump file /sys/kernel/btf/vmlinux` succeeds). Upgrade the loader: `go get github.com/cilium/ebpf@latest && go mod tidy`. |
 
 ## Contributions are welcome. Before submitting a contribution, please read:
 

@@ -183,7 +183,7 @@ func main() {
 		}
 	}()
 
-	log.Printf("daemon started — socket %s, channel buffer %d", socketPath, channelBuffer)
+	log.Printf("daemon started: socket %s, channel buffer %d", socketPath, channelBuffer)
 
 	// Signal handling — clean shutdown on Ctrl+C / SIGTERM
 	sigCh := make(chan os.Signal, 1)

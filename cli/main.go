@@ -38,6 +38,20 @@ func statusCmd() {
 
 }
 
+// function to know the source of execution
+func sourceName(source pb.ExecSource) string {
+	switch source {
+	case pb.ExecSource_EXEC_SOURCE_UNKNOWN:
+		return "unknown"
+	case pb.ExecSource_EXEC_SOURCE_EXECVE:
+		return "execve"
+	case pb.ExecSource_EXEC_SOURCE_EXECVEAT:
+		return "execveat"
+	default:
+		return "?"
+	}
+}
+
 func watchCmd() {
 	client, conn := newClient()
 	defer conn.Close()
@@ -59,10 +73,11 @@ func watchCmd() {
 			log.Fatalf("something went wrong: %v", err)
 		} else if err == nil {
 			eventTime := time.Unix(0, int64(event.WallClockNs))
-			fmt.Printf("[%s] PID=%d UID=%d COMM=%s FILENAME=%s\n",
+			fmt.Printf("[%s] PID=%d UID=%d COMM=%s SRC=%s FILENAME=%s\n",
 				eventTime.Format(time.StampMicro),
 				event.Pid, event.Uid,
 				event.Comm,
+				sourceName(event.Source),
 				event.Filename)
 		}
 	}

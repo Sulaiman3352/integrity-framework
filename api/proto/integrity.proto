@@ -36,7 +36,7 @@ enum Verdict {
   VERDICT_SUSPICIOUS = 4;  // allowed but flagged (e.g. anomalous behavior)
 }
 
-// This is for knowing the source of exec
+// This for knowing the source of exec
 enum ExecSource {
   EXEC_SOURCE_UNKNOWN   = 0;
   EXEC_SOURCE_EXECVE    = 1;

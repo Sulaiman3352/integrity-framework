@@ -7,6 +7,16 @@
 
 ---
 
+> **Update — 28 October 2026:** the project now builds against **cilium/ebpf v0.22.0** on
+> **kernel 7.2.9**. Nothing in the analysis below changes — `link.Tracepoint` is still
+> avoided and fentry is still the attach mechanism. The version bump was forced by an
+> unrelated problem: kernel 7.2.x ships a 32-byte BTF header, and v0.21.0 rejects it with
+> `load vmlinux: parsing .BTF header: header contains non-zero trailer`, so the daemon
+> could not load its programs at all. Versions below are kept as the record of the original
+> investigation.
+
+---
+
 ## 1. The Problem
 
 After implementing the eBPF execve/execveat probe with a ring buffer pipeline, the daemon
